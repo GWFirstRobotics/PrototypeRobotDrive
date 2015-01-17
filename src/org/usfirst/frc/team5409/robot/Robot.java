@@ -3,7 +3,7 @@ package org.usfirst.frc.team5409.robot;
 
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.Talon;
+import edu.wpi.first.wpilibj.RobotDrive;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -18,119 +18,75 @@ public class Robot extends IterativeRobot {
      * used for any initialization code.
      */
 	Joystick driver;
-	Talon leftFront;
-	Talon leftBack;
-	Talon rightFront;
-	Talon rightBack;
+	RobotDrive motors;
+	String direction = "None";
+	final float[] GEAR  = {0.5f, 0.66f, 1};
+	
     public void robotInit() {
-    	driver = new Joystick(1);
-    	leftFront = new Talon(0);
-    	leftBack = new Talon(1);
-    	rightFront = new Talon(2);
-    	rightBack = new Talon(3);
+    	motors = new RobotDrive(0, 1, 2, 3);
+    	driver = new Joystick(0);
     }
 
     /**
      * This function is called periodically during autonomous
      */
     public void autonomousPeriodic() {
-
+    	motors.tankDrive(0.3, 0.3);
     }
 
     /**
      * This function is called periodically during operator control
      */
-    public void teleopPeriodic_old() {
-    	float leftStickLeftSideValue = (float)driver.getRawAxis(2);
-    	float leftStickRightSideValue = leftStickLeftSideValue;
-    	float rightStickLeftSideValue = (float)driver.getRawAxis(3);
-    	float rightStickRightSideValue = rightStickLeftSideValue;
-    	float turn = (float)driver.getRawAxis(0);
-    	if(rightStickLeftSideValue > 0){
-    		if(turn > 0){ // Turning Right
-    			rightStickRightSideValue += turn*-1;
-    		}else if(turn < 0){ // Turning Left
-    			rightStickLeftSideValue += turn;
-    		}
-	    		leftFront.set((rightStickLeftSideValue / 3) * -1);
-	            leftBack.set((rightStickLeftSideValue / 3) * -1);
-	            rightFront.set(rightStickRightSideValue / 3);
-	            rightBack.set(rightStickRightSideValue / 3);
-    	} else if(leftStickLeftSideValue > 0){
-    		if(turn > 0){ // Turning Right
-    			leftStickRightSideValue += turn*-1;
-    		}else if(turn < 0){ // Turning Left
-    			leftStickLeftSideValue += turn;
-    		}
-            leftFront.set((leftStickLeftSideValue / 3));
-            leftBack.set((leftStickLeftSideValue / 3));
-            rightFront.set((leftStickRightSideValue / 3 * -1));
-            rightBack.set((leftStickRightSideValue / 3) * -1);
-    	}
-    	else{
-        	leftFront.set(0);
-            leftBack.set(0);
-            rightFront.set(0);
-            rightBack.set(0);
-        }
-    }
     
     public void teleopPeriodic() {
-    	float leftStickLeftSideValue = (float)driver.getRawAxis(2);
-    	float leftStickRightSideValue = leftStickLeftSideValue;
-    	float rightStickLeftSideValue = (float)driver.getRawAxis(3);
-    	float rightStickRightSideValue = rightStickLeftSideValue;
-    	float turn = (float)driver.getRawAxis(0);
-    	Movement=GetMovement();
-    	switch(Movement){
-    		case 'Forward':
-    		break;
-    		case 'Reverse':
-    		break;
-    		case 'Right-Forward':
-    		break;
-    		case 'Right-Reverse':
-    		break;
-    		case 'Left-Forward':
-    		break;
-    		case 'Left-Reverse':
-    		break;
+    	// Left-Right Input
+    	float leftRight = (float)driver.getRawAxis(0);
+    	float rightTrigger = (float)driver.getRawAxis(3);
+    	float leftTrigger = (float)driver.getRawAxis(2) * -1;
     	
+    	// Trigger Input
+    	float currentSpeed =  (rightTrigger + leftTrigger) * GEAR[0];
+    	
+    	// Final Speed Outputs
+    	float finalRightSpeed = currentSpeed;
+    	float finalLeftSpeed = currentSpeed;
+    	
+    	if(leftRight > 0){ // Turning Right
+    		direction = "Right";
+    	}else if(leftRight < 0){ // Turning Left
+    		direction = "Left";
     	}
-    	if(rightStickLeftSideValue > 0){
-    		if(turn > 0){ // Turning Right
-    			rightStickRightSideValue += turn*-1;
-    		}else if(turn < 0){ // Turning Left
-    			rightStickLeftSideValue += turn;
-    		}
-	    		leftFront.set((rightStickLeftSideValue / 3) * -1);
-	            leftBack.set((rightStickLeftSideValue / 3) * -1);
-	            rightFront.set(rightStickRightSideValue / 3);
-	            rightBack.set(rightStickRightSideValue / 3);
-    	} else if(leftStickLeftSideValue > 0){
-    		if(turn > 0){ // Turning Right
-    			leftStickRightSideValue += turn*-1;
-    		}else if(turn < 0){ // Turning Left
-    			leftStickLeftSideValue += turn;
-    		}
-            leftFront.set((leftStickLeftSideValue / 3));
-            leftBack.set((leftStickLeftSideValue / 3));
-            rightFront.set((leftStickRightSideValue / 3 * -1));
-            rightBack.set((leftStickRightSideValue / 3) * -1);
+    	
+    	// Value to negate from final speed
+    	float turnSpeed = Math.abs(leftRight) * currentSpeed;
+    	
+    	// Negate speed
+    	switch(direction){
+    	case "Right":
+    		finalRightSpeed -= turnSpeed;
+    		break;
+    	case "Left":
+    		finalLeftSpeed -= turnSpeed;
+    		break;
+    	case "None":
+    		break;
     	}
-    	else{
-        	leftFront.set(0);
-            leftBack.set(0);
-            rightFront.set(0);
-            rightBack.set(0);
-        }
+    	
+    	if(currentSpeed != 0){
+    		motors.tankDrive(finalLeftSpeed, finalRightSpeed);
+    		System.out.println("Final Left Speed:" + finalLeftSpeed);
+    	}else{ // Stationary turn
+    		motors.tankDrive(leftRight * GEAR[0], -1 * leftRight * GEAR[0]);
+    	}
     }
     
     /**
      * This function is called periodically during test mode
      */
     public void testPeriodic() {
-    
+    	if(driver.getRawButton(1)){
+    		System.out.println("Test Print");
+    	}
     }
     
 }
