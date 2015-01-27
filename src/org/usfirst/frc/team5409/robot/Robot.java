@@ -4,6 +4,7 @@ package org.usfirst.frc.team5409.robot;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -19,11 +20,16 @@ public class Robot extends IterativeRobot {
      */
 	Joystick driver;
 	RobotDrive motors;
+	RobotDrive claw;
 	String direction = "None";
+	DoubleSolenoid mySolenoid= new DoubleSolenoid(0,1);
+	boolean isOpen=false;
+	
 	final float[] GEAR  = {0.5f, 0.66f, 1};
 	
     public void robotInit() {
     	motors = new RobotDrive(0, 1, 2, 3);
+    	claw = new RobotDrive(4,4);
     	driver = new Joystick(0);
     }
 
@@ -40,20 +46,29 @@ public class Robot extends IterativeRobot {
     
     public void teleopPeriodic() {
     	// Left-Right Input
-    	float leftRight = (float)driver.getRawAxis(0);
-    	float rightTrigger = (float)driver.getRawAxis(3);
-    	float leftTrigger = (float)driver.getRawAxis(2) * -1;
+    	float leftRight = 0;
+    	leftRight = (float)driver.getRawAxis(0);
+    	float rightTrigger = (float)driver.getRawAxis(3) * -1;
+    	float leftTrigger = (float)driver.getRawAxis(2);
+    	boolean rightCloseButton = driver.getRawButton(8);
+    	boolean leftOpenButton = driver.getRawButton(10);
+    	
+    	//up and down motor
+    	float rightStick = (float)driver.getRawAxis(5);
+    	
     	
     	// Trigger Input
     	float currentSpeed =  (rightTrigger + leftTrigger) * GEAR[0];
     	
-    	// Final Speed Outputs
     	float finalRightSpeed = currentSpeed;
     	float finalLeftSpeed = currentSpeed;
     	
-    	if(leftRight > 0){ // Turning Right
+    	// Final Speed Outputs
+    	
+    	
+    	if(leftRight < 0){ // Turning Right
     		direction = "Right";
-    	}else if(leftRight < 0){ // Turning Left
+    	}else if(leftRight > 0){ // Turning Left
     		direction = "Left";
     	}
     	
@@ -63,21 +78,47 @@ public class Robot extends IterativeRobot {
     	// Negate speed
     	switch(direction){
     	case "Right":
-    		finalRightSpeed -= turnSpeed;
+    		finalRightSpeed -= turnSpeed*GEAR[0];
     		break;
     	case "Left":
-    		finalLeftSpeed -= turnSpeed;
+    		finalLeftSpeed -= turnSpeed*GEAR[0];
     		break;
     	case "None":
     		break;
     	}
     	
+    	if(rightTrigger!=0){
+       	 finalLeftSpeed = finalLeftSpeed *((float)0.947);
+       	}
+       	else if(leftTrigger!=0){
+       		 finalRightSpeed = finalRightSpeed*((float)0.947);
+       	}
+    	
+    	if(rightStick!=0){
+    		
+    	}
     	if(currentSpeed != 0){
     		motors.tankDrive(finalLeftSpeed, finalRightSpeed);
     		System.out.println("Final Left Speed:" + finalLeftSpeed);
     	}else{ // Stationary turn
     		motors.tankDrive(leftRight * GEAR[0], -1 * leftRight * GEAR[0]);
     	}
+    	
+    	if (rightCloseButton&&!isOpen) {
+    		mySolenoid.set(DoubleSolenoid.Value.kForward);
+    		isOpen=true;
+    		System.out.println("working");
+    	}
+    	else if (leftOpenButton&&isOpen) {
+    		mySolenoid.set(DoubleSolenoid.Value.kReverse);
+    		isOpen=false;
+    		System.out.println("working");
+    	}
+    	else{
+    		mySolenoid.set(DoubleSolenoid.Value.kOff);
+    	}
+    	
+    	
     }
     
     /**
