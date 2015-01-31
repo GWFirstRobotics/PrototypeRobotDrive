@@ -1,9 +1,7 @@
 
 package org.usfirst.frc.team5409.robot;
 
-import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.IterativeRobot;
-import edu.wpi.first.wpilibj.Jaguar;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
@@ -22,22 +20,17 @@ public class Robot extends IterativeRobot {
      */
 	Joystick driver;
 	RobotDrive motors;
-	Jaguar lift;
-	Encoder liftRotation;
+	RobotDrive claw;
 	String direction = "None";
 	DoubleSolenoid mySolenoid= new DoubleSolenoid(0,1);
-	int currentGear=0;
-	
 	boolean isOpen=false;
 	
-	final float[] GEAR  = {0.33f,0.66f , 1};
+	final float[] GEAR  = {0.5f, 0.66f, 1};
 	
     public void robotInit() {
-    	
     	motors = new RobotDrive(0, 1, 2, 3);
-    	lift  = new Jaguar(4);
+    	claw = new RobotDrive(4,4);
     	driver = new Joystick(0);
-    	//liftRotation = new Encoder()
     }
 
     /**
@@ -57,17 +50,15 @@ public class Robot extends IterativeRobot {
     	leftRight = (float)driver.getRawAxis(0);
     	float rightTrigger = (float)driver.getRawAxis(3) * -1;
     	float leftTrigger = (float)driver.getRawAxis(2);
-    	boolean rightCloseButton = driver.getRawButton(2);
-    	boolean leftOpenButton = driver.getRawButton(1);
-    	boolean increaseGear= driver.getRawButton(8);
-    	boolean lowerGear= driver.getRawButton(7);
+    	boolean rightCloseButton = driver.getRawButton(8);
+    	boolean leftOpenButton = driver.getRawButton(10);
     	
     	//up and down motor
     	float rightStick = (float)driver.getRawAxis(5);
     	
     	
     	// Trigger Input
-    	float currentSpeed =  (rightTrigger + leftTrigger) * GEAR[currentGear];
+    	float currentSpeed =  (rightTrigger + leftTrigger) * GEAR[0];
     	
     	float finalRightSpeed = currentSpeed;
     	float finalLeftSpeed = currentSpeed;
@@ -87,10 +78,10 @@ public class Robot extends IterativeRobot {
     	// Negate speed
     	switch(direction){
     	case "Right":
-    		finalRightSpeed -= turnSpeed*GEAR[currentGear];
+    		finalRightSpeed -= turnSpeed*GEAR[0];
     		break;
     	case "Left":
-    		finalLeftSpeed -= turnSpeed*GEAR[currentGear];
+    		finalLeftSpeed -= turnSpeed*GEAR[0];
     		break;
     	case "None":
     		break;
@@ -103,15 +94,14 @@ public class Robot extends IterativeRobot {
        		 finalRightSpeed = finalRightSpeed*((float)0.947);
        	}
     	
-    	if(rightStick !=0 ){
-    		lift.set(rightStick * 10);
+    	if(rightStick!=0){
     		
     	}
     	if(currentSpeed != 0){
     		motors.tankDrive(finalLeftSpeed, finalRightSpeed);
     		System.out.println("Final Left Speed:" + finalLeftSpeed);
     	}else{ // Stationary turn
-    		motors.tankDrive(leftRight * GEAR[currentGear], -1 * leftRight * GEAR[currentGear]);
+    		motors.tankDrive(leftRight * GEAR[0], -1 * leftRight * GEAR[0]);
     	}
     	
     	if (rightCloseButton&&!isOpen) {
@@ -126,13 +116,6 @@ public class Robot extends IterativeRobot {
     	}
     	else{
     		mySolenoid.set(DoubleSolenoid.Value.kOff);
-    	}
-    	
-    	if(increaseGear&&currentGear<2){
-    		currentGear++;
-    	}
-    	else if(lowerGear&&currentGear>0){
-    		currentGear--;
     	}
     	
     	
